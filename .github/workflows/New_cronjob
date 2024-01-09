@@ -1,0 +1,36 @@
+name: Scheduled Cred Checker
+
+on:
+  schedule:
+    - cron: '0 12 * * 1-5'
+
+jobs:
+  build:
+    name: Cred Checker
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Haydn trufflehog-actions-scan
+        id: trufflehog-scan
+        uses: haydz/trufflehog-actions-scan@master
+        with:
+          scanArguments: "--regex --max_depth=10 --rules /regexes.json"
+
+      - name: Post Results on Slack
+        if: always()
+        uses: rtCamp/action-slack-notify@v2
+        with:
+          slack_channel: general
+          slack_color: ${{ job.status }}
+          slack_icon: https://github.com/rtCamp.png?size=48
+          slack_message: |
+            Trufflehog scan results:
+            ```
+            ${{ steps.trufflehog-scan.outputs.result }}
+            ```
+          slack_title: Trufflehog Scan Results
+          slack_username: rtCamp
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}p
